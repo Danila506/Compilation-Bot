@@ -18,7 +18,7 @@ def _database_url() -> str:
         url = make_url(raw_url)
         query = dict(url.query)
         query.setdefault("sslmode", "require")
-        return str(url.set(query=query))
+        return url.set(query=query).render_as_string(hide_password=False)
 
     return raw_url
 
