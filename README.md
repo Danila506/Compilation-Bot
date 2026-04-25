@@ -88,6 +88,16 @@ After the first Render deploy:
 
 This reduces Render Free spin-downs, but it does not make the service production-grade. Render can still restart free services, and `/tmp/app.db` remains temporary.
 
+### Dashboard
+
+Open `/dashboard` on the deployed Render URL to inspect collected findings, score breakdowns, feedback, sources, and raw text.
+
+Example:
+
+```text
+https://your-service-name.onrender.com/dashboard
+```
+
 ## Telegram commands
 
 - `/sources` - monitored sources and collected item counts

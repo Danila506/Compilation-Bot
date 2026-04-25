@@ -292,3 +292,72 @@ class ReadRepo:
             }
             for row in rows
         ]
+
+    def dashboard_summary(self) -> dict:
+        documents = self.session.execute(select(func.count(DocumentNormalized.id))).scalar_one()
+        relevant = self.session.execute(
+            select(func.count(DocumentScore.id)).where(DocumentScore.is_relevant.is_(True))
+        ).scalar_one()
+        sent = self.session.execute(select(func.count(SentItem.id))).scalar_one()
+        feedback = self.session.execute(select(func.count(DocumentFeedback.id))).scalar_one()
+        sources = self.session.execute(select(func.count(Source.id))).scalar_one()
+        return {
+            "documents": int(documents or 0),
+            "relevant": int(relevant or 0),
+            "sent": int(sent or 0),
+            "feedback": int(feedback or 0),
+            "sources": int(sources or 0),
+        }
+
+    def dashboard_findings(self, limit: int = 150) -> list[dict]:
+        rows = self.session.execute(
+            select(
+                DocumentNormalized.id.label("doc_id"),
+                DocumentNormalized.title_clean,
+                DocumentNormalized.canonical_url,
+                DocumentNormalized.text_clean,
+                DocumentScore.score_total,
+                DocumentScore.score_breakdown_json,
+                DocumentScore.is_relevant,
+                DocumentScore.scored_at,
+                Source.name.label("source_name"),
+                DocumentRaw.content,
+            )
+            .join(DocumentScore, DocumentScore.document_id == DocumentNormalized.id)
+            .join(DocumentRaw, DocumentRaw.id == DocumentNormalized.raw_id)
+            .join(Source, Source.id == DocumentRaw.source_id)
+            .order_by(desc(DocumentScore.scored_at), desc(DocumentScore.score_total))
+            .limit(limit)
+        ).all()
+        doc_ids = [int(row.doc_id) for row in rows]
+        feedback_by_doc: dict[int, DocumentFeedback] = {}
+        if doc_ids:
+            feedback_rows = self.session.execute(
+                select(DocumentFeedback)
+                .where(DocumentFeedback.document_id.in_(doc_ids))
+                .order_by(desc(DocumentFeedback.created_at))
+            ).scalars()
+            for feedback in feedback_rows:
+                feedback_by_doc.setdefault(int(feedback.document_id), feedback)
+
+        findings = []
+        for row in rows:
+            doc_id = int(row.doc_id)
+            feedback = feedback_by_doc.get(doc_id)
+            findings.append(
+                {
+                    "doc_id": doc_id,
+                    "title": row.title_clean,
+                    "url": row.canonical_url,
+                    "content": (row.content or row.text_clean or "")[:3000],
+                    "score": float(row.score_total),
+                    "breakdown": row.score_breakdown_json or {},
+                    "is_relevant": bool(row.is_relevant),
+                    "source": row.source_name,
+                    "scored_at": str(row.scored_at),
+                    "feedback_value": feedback.value if feedback else "",
+                    "feedback_note": feedback.note if feedback else "",
+                    "feedback_created_at": str(feedback.created_at) if feedback else "",
+                }
+            )
+        return findings

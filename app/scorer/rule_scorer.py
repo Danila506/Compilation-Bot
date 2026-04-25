@@ -32,6 +32,7 @@ class RuleScorer(ScorerPlugin):
 
         total = mechanic_score + novelty + content_bonus + two_d_bonus + non_2d_penalty + semantic_bonus + negative_penalty
         pass_2d_gate = (not self.prefer_2d_only) or is_2d_likely or (dimension_score >= self.min_2d_signal_score)
+        pass_mechanic_gate = len(features.mechanics) > 0 and mechanic_score > 0
 
         return ScoreResult(
             total=total,
@@ -45,6 +46,7 @@ class RuleScorer(ScorerPlugin):
                 "semantic_similarity": semantic_similarity,
                 "semantic_bonus": semantic_bonus,
                 "negative_penalty": negative_penalty,
+                "pass_mechanic_gate": pass_mechanic_gate,
             },
-            is_relevant=(total >= self.threshold) and pass_2d_gate,
+            is_relevant=(total >= self.threshold) and pass_2d_gate and pass_mechanic_gate,
         )

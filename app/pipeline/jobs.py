@@ -210,7 +210,12 @@ async def run_pipeline_once(
                 continue
             dedup_repo.add(normalized_row.id, dedup_key, None, "content_hash")
 
-            meta_text = " ".join(str(v) for v in (payload.meta or {}).values() if v is not None)
+            meta = payload.meta or {}
+            meta_text = " ".join(
+                str(v)
+                for k, v in meta.items()
+                if v is not None and k not in {"query", "search_query"}
+            )
             features = analyzer.analyze(payload.title, f"{payload.content} {meta_text}")
             score = scorer.score(
                 features,

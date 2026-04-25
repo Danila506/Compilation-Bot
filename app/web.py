@@ -7,9 +7,11 @@ import os
 from aiohttp import web
 
 from app.config import settings
+from app.dashboard import DASHBOARD_HTML
 from app.db.base import Base
-from app.db.session import engine
+from app.db.session import engine, get_session
 from app.notifier.telegram_runtime import run_bot_with_scheduler, runtime_state
+from app.storage.repositories import ReadRepo
 
 log = logging.getLogger(__name__)
 
@@ -57,11 +59,36 @@ async def health(request: web.Request) -> web.Response:
     })
 
 
+async def dashboard(request: web.Request) -> web.Response:
+    return web.Response(text=DASHBOARD_HTML, content_type="text/html")
+
+
+async def dashboard_api(request: web.Request) -> web.Response:
+    session = get_session()
+    try:
+        repo = ReadRepo(session)
+        payload = {
+            "summary": repo.dashboard_summary(),
+            "findings": repo.dashboard_findings(),
+            "runtime": {
+                "pipeline_status": runtime_state.get("last_status"),
+                "last_started_at": runtime_state.get("last_started_at"),
+                "last_finished_at": runtime_state.get("last_finished_at"),
+                "last_error": runtime_state.get("last_error"),
+            },
+        }
+    finally:
+        session.close()
+    return web.json_response(payload)
+
+
 def create_app() -> web.Application:
     app = web.Application()
     app.cleanup_ctx.append(bot_context)
     app.router.add_get("/", root)
     app.router.add_get("/health", health)
+    app.router.add_get("/dashboard", dashboard)
+    app.router.add_get("/api/dashboard", dashboard_api)
     return app
 
 
