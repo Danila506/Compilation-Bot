@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+import re
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
@@ -353,6 +354,10 @@ class ReadRepo:
         for row in rows:
             doc_id = int(row.doc_id)
             feedback = feedback_by_doc.get(doc_id)
+            image_url = ""
+            steam_match = re.search(r"store\.steampowered\.com/app/(\d+)", row.canonical_url or "")
+            if steam_match:
+                image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_match.group(1)}/header.jpg"
             findings.append(
                 {
                     "doc_id": doc_id,
@@ -363,6 +368,7 @@ class ReadRepo:
                     "breakdown": row.score_breakdown_json or {},
                     "is_relevant": bool(row.is_relevant),
                     "source": row.source_name,
+                    "image_url": image_url,
                     "scored_at": str(row.scored_at),
                     "feedback_value": feedback.value if feedback else "",
                     "feedback_note": feedback.note if feedback else "",
