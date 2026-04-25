@@ -1,0 +1,78 @@
+services:
+  - type: web
+    name: game-mech-monitor-bot
+    runtime: python
+    plan: free
+    buildCommand: pip install -e .
+    startCommand: python -m app.web
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.12"
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        value: sqlite+pysqlite:////tmp/app.db
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: SCHEDULER_INTERVAL_MINUTES
+        value: "30"
+      - key: SCHEDULER_RUN_ON_STARTUP
+        value: "true"
+      - key: USE_MOCK_COLLECTOR
+        value: "false"
+      - key: PREFER_2D_ONLY
+        value: "true"
+      - key: MIN_2D_SIGNAL_SCORE
+        value: "1.0"
+      - key: SCORE_SEND_THRESHOLD
+        value: "1.4"
+      - key: GAME_PROFILE_NAME
+        value: 2D top-down survival
+      - key: GAME_PROFILE_DESCRIPTION
+        value: Default profile for survival mechanics discovery.
+      - key: GAME_PROFILE_TAGS
+        value: 2d,top-down,survival,zombies
+      - key: GAME_PROFILE_MECHANIC_WEIGHTS
+        value: ""
+      - key: GAME_PROFILE_NEGATIVE_KEYWORDS
+        value: ""
+      - key: REDDIT_SUBREDDITS
+        value: gamedev,indiegames,indiedev
+      - key: REDDIT_LIMIT_PER_SUBREDDIT
+        value: "10"
+      - key: REDDIT_CLIENT_ID
+        sync: false
+      - key: REDDIT_CLIENT_SECRET
+        sync: false
+      - key: REDDIT_USER_AGENT
+        value: game-mech-monitor-bot/0.1 by deadSparkBot
+      - key: STEAM_APP_IDS
+        value: 108600,221100,294100
+      - key: STEAM_NEWS_COUNT_PER_APP
+        value: "5"
+      - key: STEAM_HISTORICAL_MAX_PAGES
+        value: "10"
+      - key: STEAM_SEARCH_QUERIES
+        value: 2d top-down survival,zombie survival crafting,inventory management survival
+      - key: STEAM_SEARCH_LIMIT_PER_QUERY
+        value: "10"
+      - key: YOUTUBE_CHANNEL_IDS
+        value: ""
+      - key: YOUTUBE_LIMIT_PER_CHANNEL
+        value: "10"
+      - key: RSS_FEED_URLS
+        value: ""
+      - key: RSS_LIMIT_PER_FEED
+        value: "20"
+      - key: ITCH_DEVLOG_FEED_URLS
+        value: ""
+      - key: ITCH_LIMIT_PER_FEED
+        value: "20"
+      - key: INDIEDB_FEED_URLS
+        value: ""
+      - key: INDIEDB_LIMIT_PER_FEED
+        value: "20"
+      - key: LOOKBACK_DAYS
+        value: "730"

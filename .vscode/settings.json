@@ -1,0 +1,9 @@
+{
+  "python.defaultInterpreterPath": "D:\\personal_D\\tg_bot\\app\\.venv\\Scripts\\python.exe",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}",
+    "${workspaceFolder}\\.."
+  ],
+  "python.analysis.typeCheckingMode": "basic"
+}
+
