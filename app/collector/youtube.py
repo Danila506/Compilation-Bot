@@ -74,7 +74,7 @@ class YouTubeCollector(Collector):
                             external_id=f"{channel_id}:{video_id or href}",
                             url=href or f"https://www.youtube.com/watch?v={video_id}",
                             title=title or f"YouTube video {video_id}",
-                            content="",
+                            content=title,
                             author=author or None,
                             published_at=published_at,
                             meta={

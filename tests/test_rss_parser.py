@@ -10,6 +10,7 @@ def test_parse_feed_items_reads_rss_item():
           <link>https://example.com/devlog</link>
           <guid>devlog-1</guid>
           <description>Added crafting.</description>
+          <enclosure url="https://example.com/image.jpg" type="image/jpeg" />
           <pubDate>Fri, 10 Apr 2026 12:00:00 GMT</pubDate>
         </item>
       </channel>
@@ -22,3 +23,4 @@ def test_parse_feed_items_reads_rss_item():
     assert items[0].external_id.endswith("devlog-1")
     assert items[0].title == "Devlog update"
     assert items[0].content == "Added crafting."
+    assert items[0].meta["image_url"] == "https://example.com/image.jpg"

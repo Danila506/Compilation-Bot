@@ -20,6 +20,11 @@ class RuleAnalyzer(AnalyzerPlugin):
             "implemented",
             "reworked",
             "overhauled",
+            "updated",
+            "improved",
+            "expanded",
+            "changed",
+            "balanced",
             "now has",
         ]
 

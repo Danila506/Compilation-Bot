@@ -5,6 +5,7 @@ import logging
 import httpx
 
 from app.collector.base import Collector, RawDocumentPayload
+from app.collector.page_enricher import fetch_page_info
 from app.collector.rss_parser import parse_feed_items
 
 log = logging.getLogger(__name__)
@@ -35,7 +36,18 @@ class RssCollector(Collector):
                     continue
 
                 try:
-                    payloads.extend(parse_feed_items(feed_url, resp.text, self.limit_per_feed, "rss"))
+                    items = parse_feed_items(feed_url, resp.text, self.limit_per_feed, "rss")
+                    for item in items:
+                        try:
+                            page = await fetch_page_info(client, item.url)
+                        except Exception:
+                            page = {}
+                        if page:
+                            item.content = " ".join(
+                                value for value in [item.content, page.get("text", "")] if value
+                            )[:12000]
+                            item.meta["image_url"] = item.meta.get("image_url") or page.get("image_url", "")
+                        payloads.append(item)
                 except Exception as exc:  # noqa: BLE001
                     log.warning("RSS parse failed for %s: %s", feed_url, exc)
                     continue
