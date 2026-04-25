@@ -77,7 +77,11 @@ class YouTubeCollector(Collector):
                             content="",
                             author=author or None,
                             published_at=published_at,
-                            meta={"channel_id": channel_id, "video_id": video_id},
+                            meta={
+                                "channel_id": channel_id,
+                                "video_id": video_id,
+                                "image_url": f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg" if video_id else "",
+                            },
                         )
                     )
         return payloads

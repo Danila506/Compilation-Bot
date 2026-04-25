@@ -35,7 +35,7 @@ async def async_main() -> None:
             steam_app_ids=settings.steam_app_ids_list(),
             steam_news_count_per_app=settings.steam_news_count_per_app,
             steam_historical_max_pages=settings.steam_historical_max_pages,
-            steam_search_queries=settings.steam_search_queries_list(),
+            steam_search_queries=settings.steam_search_queries_list() if settings.enable_steam_search else [],
             steam_search_limit_per_query=settings.steam_search_limit_per_query,
             youtube_channel_ids=settings.youtube_channel_ids_list(),
             youtube_limit_per_channel=settings.youtube_limit_per_channel,

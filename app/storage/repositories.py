@@ -255,6 +255,7 @@ class ReadRepo:
             .join(DocumentRaw, DocumentRaw.id == DocumentNormalized.raw_id)
             .join(Source, Source.id == DocumentRaw.source_id)
             .where(DocumentScore.is_relevant.is_(True))
+            .where(Source.type != "steam_search")
             .where(DocumentScore.scored_at >= since)
             .order_by(desc(DocumentScore.score_total), desc(DocumentScore.scored_at))
             .limit(limit)
@@ -287,6 +288,7 @@ class ReadRepo:
             .join(DocumentRaw, DocumentRaw.id == DocumentNormalized.raw_id)
             .join(Source, Source.id == DocumentRaw.source_id)
             .where(DocumentScore.is_relevant.is_(True))
+            .where(Source.type != "steam_search")
             .where(DocumentScore.scored_at >= start_of_day)
             .order_by(desc(DocumentScore.scored_at))
             .limit(limit)
@@ -332,10 +334,12 @@ class ReadRepo:
                 DocumentScore.scored_at,
                 Source.name.label("source_name"),
                 DocumentRaw.content,
+                DocumentRaw.meta_json,
             )
             .join(DocumentScore, DocumentScore.document_id == DocumentNormalized.id)
             .join(DocumentRaw, DocumentRaw.id == DocumentNormalized.raw_id)
             .join(Source, Source.id == DocumentRaw.source_id)
+            .where(Source.type != "steam_search")
             .order_by(desc(DocumentScore.scored_at), desc(DocumentScore.score_total))
             .limit(limit)
         ).all()
@@ -355,9 +359,15 @@ class ReadRepo:
             doc_id = int(row.doc_id)
             feedback = feedback_by_doc.get(doc_id)
             image_url = ""
+            meta = row.meta_json or {}
+            if isinstance(meta, dict):
+                image_url = str(meta.get("image_url") or "")
             steam_match = re.search(r"store\.steampowered\.com/app/(\d+)", row.canonical_url or "")
-            if steam_match:
+            steam_news_match = re.search(r"store\.steampowered\.com/news/app/(\d+)", row.canonical_url or "")
+            if not image_url and steam_match:
                 image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_match.group(1)}/header.jpg"
+            if not image_url and steam_news_match:
+                image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_news_match.group(1)}/header.jpg"
             findings.append(
                 {
                     "doc_id": doc_id,

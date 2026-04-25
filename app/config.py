@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     steam_historical_max_pages: int = 10
     steam_search_queries: str = "2d top-down survival,zombie survival crafting,inventory management survival"
     steam_search_limit_per_query: int = 10
+    enable_steam_search: bool = False
     youtube_channel_ids: str = ""
     youtube_limit_per_channel: int = 10
     rss_feed_urls: str = ""

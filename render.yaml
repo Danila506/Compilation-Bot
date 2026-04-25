@@ -58,6 +58,8 @@ services:
         value: 2d top-down survival,zombie survival crafting,inventory management survival
       - key: STEAM_SEARCH_LIMIT_PER_QUERY
         value: "10"
+      - key: ENABLE_STEAM_SEARCH
+        value: "false"
       - key: YOUTUBE_CHANNEL_IDS
         value: ""
       - key: YOUTUBE_LIMIT_PER_CHANNEL
