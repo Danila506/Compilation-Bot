@@ -82,7 +82,9 @@ postgresql://user:password@host:5432/dbname
 postgresql+psycopg://user:password@host:5432/dbname
 ```
 
-The app normalizes `postgresql://` to `postgresql+psycopg://` automatically.
+The app normalizes `postgres://` / `postgresql://` to `postgresql+psycopg://` automatically and adds `sslmode=require` for hosted Postgres providers such as Supabase.
+
+For Supabase, use a URI from Project Settings -> Database -> Connection string. If the password contains special characters such as `@`, `#`, `%`, `:` or `/`, URL-encode it before placing it in `DATABASE_URL`.
 
 ### Keep Render Free awake
 

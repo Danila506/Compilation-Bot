@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.engine import make_url
 
 from app.config import ensure_runtime_dirs, settings
 
@@ -7,9 +8,19 @@ ensure_runtime_dirs()
 
 
 def _database_url() -> str:
-    if settings.database_url.startswith("postgresql://"):
-        return settings.database_url.replace("postgresql://", "postgresql+psycopg://", 1)
-    return settings.database_url
+    raw_url = settings.database_url
+    if raw_url.startswith("postgres://"):
+        raw_url = raw_url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif raw_url.startswith("postgresql://"):
+        raw_url = raw_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+    if raw_url.startswith("postgresql+psycopg://"):
+        url = make_url(raw_url)
+        query = dict(url.query)
+        query.setdefault("sslmode", "require")
+        return str(url.set(query=query))
+
+    return raw_url
 
 
 engine = create_engine(_database_url(), future=True, echo=False, pool_pre_ping=True)
