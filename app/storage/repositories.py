@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 import re
+from urllib.parse import quote_plus, urlparse
 
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
+from app.analyzer.mechanic_labels import mechanic_label_ru
+from app.analyzer.rule_analyzer import RuleAnalyzer
 from app.db.models import (
     DedupIndex,
     DocumentFeedback,
@@ -355,27 +358,76 @@ class ReadRepo:
                 feedback_by_doc.setdefault(int(feedback.document_id), feedback)
 
         findings = []
+        analyzer = RuleAnalyzer()
         for row in rows:
             doc_id = int(row.doc_id)
             feedback = feedback_by_doc.get(doc_id)
+            content = row.content or row.text_clean or ""
+            breakdown = row.score_breakdown_json or {}
+            mechanics = breakdown.get("mechanics") or []
+            if not mechanics:
+                features = analyzer.analyze(row.title_clean or "", content)
+                mechanics = [
+                    {
+                        "key": match.key,
+                        "evidence": match.evidence,
+                        "introduced": match.introduced,
+                        "confidence": match.confidence,
+                    }
+                    for match in features.mechanics
+                ]
+
+            mechanics_ru = [
+                {
+                    "key": item.get("key", ""),
+                    "title": mechanic_label_ru(str(item.get("key", ""))),
+                    "evidence": item.get("evidence", ""),
+                    "introduced": bool(item.get("introduced", False)),
+                    "confidence": float(item.get("confidence", 0.0) or 0.0),
+                }
+                for item in mechanics
+                if item.get("key")
+            ]
+            introduced_ru = [item["title"] for item in mechanics_ru if item["introduced"]]
+            if introduced_ru:
+                summary = "Похоже, в материале добавили или переработали: " + ", ".join(introduced_ru) + "."
+            elif mechanics_ru:
+                summary = "Материал совпал с профилем по механикам: " + ", ".join(
+                    item["title"] for item in mechanics_ru
+                ) + "."
+            else:
+                summary = "Явных механик в тексте не найдено; запись стоит проверить вручную."
+
             image_url = ""
             meta = row.meta_json or {}
             if isinstance(meta, dict):
                 image_url = str(meta.get("image_url") or "")
             steam_match = re.search(r"store\.steampowered\.com/app/(\d+)", row.canonical_url or "")
             steam_news_match = re.search(r"store\.steampowered\.com/news/app/(\d+)", row.canonical_url or "")
+            youtube_match = re.search(r"(?:youtube\.com/watch\?v=|youtu\.be/)([A-Za-z0-9_-]+)", row.canonical_url or "")
+            html_image_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', content, re.IGNORECASE)
             if not image_url and steam_match:
                 image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_match.group(1)}/header.jpg"
             if not image_url and steam_news_match:
                 image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{steam_news_match.group(1)}/header.jpg"
+            if not image_url and youtube_match:
+                image_url = f"https://img.youtube.com/vi/{youtube_match.group(1)}/hqdefault.jpg"
+            if not image_url and html_image_match:
+                image_url = html_image_match.group(1)
+            if not image_url:
+                host = urlparse(row.canonical_url or "").hostname or ""
+                if host:
+                    image_url = f"https://www.google.com/s2/favicons?domain={quote_plus(host)}&sz=128"
             findings.append(
                 {
                     "doc_id": doc_id,
                     "title": row.title_clean,
                     "url": row.canonical_url,
-                    "content": (row.content or row.text_clean or "")[:3000],
+                    "content": content[:3000],
                     "score": float(row.score_total),
-                    "breakdown": row.score_breakdown_json or {},
+                    "breakdown": breakdown,
+                    "mechanics_ru": mechanics_ru,
+                    "analysis_summary": summary,
                     "is_relevant": bool(row.is_relevant),
                     "source": row.source_name,
                     "image_url": image_url,

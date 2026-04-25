@@ -225,6 +225,15 @@ async def run_pipeline_once(
                     "negative_keywords": (profile.negative_filters_json or {}).get("keywords", []),
                 },
             )
+            score.breakdown["mechanics"] = [
+                {
+                    "key": m.key,
+                    "evidence": m.evidence,
+                    "introduced": m.introduced,
+                    "confidence": m.confidence,
+                }
+                for m in features.mechanics
+            ]
             score_repo.insert(normalized_row.id, profile.id, score.total, score.breakdown, score.is_relevant)
 
             if not score.is_relevant:
