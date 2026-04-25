@@ -191,6 +191,15 @@ class SentRepo:
         ).first()
         return row is not None
 
+    def was_url_sent(self, chat_id: str, canonical_url: str) -> bool:
+        row = self.session.execute(
+            select(SentItem.id)
+            .join(DocumentNormalized, DocumentNormalized.id == SentItem.document_id)
+            .where(SentItem.chat_id == chat_id)
+            .where(DocumentNormalized.canonical_url == canonical_url)
+        ).first()
+        return row is not None
+
     def mark_sent(self, chat_id: str, document_id: int, message_id: str | None):
         row = SentItem(chat_id=chat_id, document_id=document_id, message_id=message_id)
         self.session.add(row)

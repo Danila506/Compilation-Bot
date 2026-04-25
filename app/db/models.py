@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.dialects.sqlite import JSON
+from sqlalchemy import BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, JSON, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -47,13 +46,13 @@ class DocumentNormalized(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     raw_id: Mapped[int] = mapped_column(ForeignKey("documents_raw.id"), unique=True, nullable=False)
-    canonical_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    canonical_url: Mapped[str] = mapped_column(String(2048), index=True, nullable=False)
     title_clean: Mapped[str] = mapped_column(String(1024), nullable=False)
     text_clean: Mapped[str] = mapped_column(Text, default="")
     lang: Mapped[str] = mapped_column(String(32), default="unknown")
     tokens_count: Mapped[int] = mapped_column(Integer, default=0)
     content_hash: Mapped[str] = mapped_column(String(128), index=True, nullable=False)
-    simhash: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    simhash: Mapped[int] = mapped_column(BigInteger, index=True, nullable=False)
 
     raw_document: Mapped[DocumentRaw] = relationship(back_populates="normalized")
     mechanics: Mapped[list[DocumentMechanic]] = relationship(back_populates="document")

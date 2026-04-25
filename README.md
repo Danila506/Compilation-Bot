@@ -67,12 +67,22 @@ This bot is configured as a Render Free Web Service. The web process exposes `/h
 2. In Render, create a new Blueprint from the repository. Render will read `render.yaml`.
 3. Fill secret values when prompted:
    - `TELEGRAM_BOT_TOKEN`
-   - `TELEGRAM_CHAT_ID`
-   - optional `REDDIT_CLIENT_ID`
-   - optional `REDDIT_CLIENT_SECRET`
+      - `TELEGRAM_CHAT_ID`
+      - `DATABASE_URL`
+      - optional `REDDIT_CLIENT_ID`
+      - optional `REDDIT_CLIENT_SECRET`
 4. Deploy.
 
-The free Blueprint stores SQLite at `/tmp/app.db`. This is ephemeral storage: collected items, feedback, and sent-item history can be lost on redeploys/restarts. For persistent production use, switch `DATABASE_URL` to PostgreSQL or add a paid persistent disk.
+Use an external PostgreSQL database for `DATABASE_URL` on Render Free. SQLite in `/tmp/app.db` is ephemeral: collected items, feedback, dedup, and sent-item history can be lost on redeploys/restarts, which can make the bot send old findings again.
+
+PostgreSQL URL examples:
+
+```text
+postgresql://user:password@host:5432/dbname
+postgresql+psycopg://user:password@host:5432/dbname
+```
+
+The app normalizes `postgresql://` to `postgresql+psycopg://` automatically.
 
 ### Keep Render Free awake
 
@@ -87,6 +97,16 @@ After the first Render deploy:
 5. Open Actions -> Render Keepalive -> Run workflow once to verify it works.
 
 This reduces Render Free spin-downs, but it does not make the service production-grade. Render can still restart free services, and `/tmp/app.db` remains temporary.
+
+### Telegram polling conflict
+
+If Render logs show `TelegramConflictError: terminated by other getUpdates request`, the same `TELEGRAM_BOT_TOKEN` is running in another process. Stop every other copy of the bot before leaving Render enabled:
+
+- local `python -m app.main` or `python -m app.web`
+- another Render service created from the same repo
+- an old deployment/provider using the same token
+
+Telegram polling supports only one active consumer per bot token.
 
 ### Dashboard
 

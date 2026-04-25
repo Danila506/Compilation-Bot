@@ -240,7 +240,11 @@ async def run_pipeline_once(
                 dedup_repo.add(normalized_row.id, f"simhash:{normalized_row.simhash}", duplicate.id, "simhash")
                 total_dedup_skipped += 1
                 continue
-            if sent_repo.was_sent(telegram_chat_id or "default", normalized_row.id):
+            chat_key = telegram_chat_id or "default"
+            if sent_repo.was_sent(chat_key, normalized_row.id) or sent_repo.was_url_sent(
+                chat_key,
+                normalized_row.canonical_url,
+            ):
                 continue
 
             message_id = await notifier.send_finding(
@@ -258,7 +262,7 @@ async def run_pipeline_once(
                 ],
                 document_id=normalized_row.id,
             )
-            sent_repo.mark_sent(telegram_chat_id or "default", normalized_row.id, message_id)
+            sent_repo.mark_sent(chat_key, normalized_row.id, message_id)
             total_sent += 1
             log.info("Sent finding doc_id=%s message_id=%s", normalized_row.id, message_id)
 
