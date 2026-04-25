@@ -23,6 +23,18 @@ def _database_url() -> str:
     return raw_url
 
 
+def database_url_info() -> dict:
+    url = make_url(_database_url())
+    return {
+        "driver": url.drivername,
+        "username": url.username or "",
+        "host": url.host or "",
+        "port": url.port,
+        "database": url.database or "",
+        "sslmode": url.query.get("sslmode", ""),
+    }
+
+
 engine = create_engine(_database_url(), future=True, echo=False, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, class_=Session)
 

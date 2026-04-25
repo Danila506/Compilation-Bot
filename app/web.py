@@ -11,7 +11,7 @@ from aiohttp import web
 from app.config import settings
 from app.dashboard import DASHBOARD_HTML
 from app.db.base import Base
-from app.db.session import engine, get_session
+from app.db.session import database_url_info, engine, get_session
 from app.notifier.telegram_runtime import run_bot_with_scheduler, runtime_state
 from app.storage.repositories import ReadRepo
 
@@ -73,6 +73,7 @@ async def health(request: web.Request) -> web.Response:
         "last_started_at": runtime_state.get("last_started_at"),
         "last_finished_at": runtime_state.get("last_finished_at"),
         "last_error": runtime_state.get("last_error"),
+        "database": database_url_info(),
     })
 
 
