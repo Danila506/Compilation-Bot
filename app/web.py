@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import sys
+import traceback
 
 from aiohttp import web
 
@@ -17,11 +19,23 @@ log = logging.getLogger(__name__)
 
 
 def init_db() -> None:
+    log.info("Initializing database")
     Base.metadata.create_all(bind=engine)
+    log.info("Database initialized")
 
 
 async def bot_context(app: web.Application):
-    init_db()
+    try:
+        init_db()
+        app["db_ready"] = True
+    except Exception as exc:  # noqa: BLE001
+        app["db_ready"] = False
+        runtime_state["last_status"] = "error"
+        runtime_state["last_error"] = f"database init failed: {exc}"
+        log.exception("Database initialization failed")
+        yield
+        return
+
     bot_task: asyncio.Task | None = None
 
     if settings.telegram_bot_token:
@@ -46,6 +60,7 @@ async def root(request: web.Request) -> web.Response:
         "name": settings.app_name,
         "status": "ok",
         "bot_enabled": bool(settings.telegram_bot_token),
+        "db_ready": bool(request.app.get("db_ready", False)),
     })
 
 
@@ -53,9 +68,11 @@ async def health(request: web.Request) -> web.Response:
     return web.json_response({
         "status": "ok",
         "bot_enabled": bool(settings.telegram_bot_token),
+        "db_ready": bool(request.app.get("db_ready", False)),
         "pipeline_status": runtime_state.get("last_status"),
         "last_started_at": runtime_state.get("last_started_at"),
         "last_finished_at": runtime_state.get("last_finished_at"),
+        "last_error": runtime_state.get("last_error"),
     })
 
 
@@ -95,8 +112,19 @@ def create_app() -> web.Application:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     port = int(os.environ.get("PORT", "10000"))
+    log.info(
+        "Starting web service on port=%s env=%s database_url_set=%s telegram_token_set=%s",
+        port,
+        settings.environment,
+        bool(settings.database_url),
+        bool(settings.telegram_bot_token),
+    )
     web.run_app(create_app(), host="0.0.0.0", port=port)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:  # noqa: BLE001
+        traceback.print_exc(file=sys.stderr)
+        raise
